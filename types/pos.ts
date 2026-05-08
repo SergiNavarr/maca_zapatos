@@ -1,6 +1,8 @@
 export interface ProductVariant {
   id: string
   name: string
+  brand: string
+  category: string
   size: string
   color: string
   price: number
