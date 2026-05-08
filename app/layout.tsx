@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import { TopHeader } from '@/components/layout/TopHeader'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { POSProvider } from '@/context/POSContext'
@@ -55,7 +54,6 @@ export default function RootLayout({
             <BottomNav />
           </div>
         </POSProvider>
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )
