@@ -5,15 +5,16 @@ import { BottomNav } from '@/components/layout/BottomNav'
 import { POSProvider } from '@/context/POSContext'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
+import { AuthProvider } from '@/context/AuthContext'
 
-const geist = Geist({ 
+const geist = Geist({
   variable: '--font-geist-sans',
-  subsets: ['latin'] 
+  subsets: ['latin']
 })
 
-const geistMono = Geist_Mono({ 
+const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
-  subsets: ['latin'] 
+  subsets: ['latin']
 })
 
 export const metadata: Metadata = {
@@ -55,14 +56,16 @@ export default function RootLayout({
   return (
     <html lang="es-AR" className="bg-muted">
       <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
-        <POSProvider>
-          <div className="flex min-h-dvh flex-col bg-muted">
-            <TopHeader />
-            <main className="flex-1 pb-20">{children}</main>
-            <BottomNav />
-          </div>
-          <Toaster />
-        </POSProvider>
+        <AuthProvider>
+          <POSProvider>
+            <div className="flex min-h-dvh flex-col bg-muted">
+              <TopHeader />
+              <main className="flex-1 pb-20">{children}</main>
+              <BottomNav />
+            </div>
+            <Toaster />
+          </POSProvider>
+        </AuthProvider>
       </body>
     </html>
   )

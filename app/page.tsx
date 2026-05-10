@@ -11,27 +11,46 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { ShoppingCart, PackageSearch } from 'lucide-react'
 import type { ProductVariant } from '@/types/pos'
+import { useAuth } from '@/context/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function POSPage() {
+  // 1. ABSOLUTAMENTE TODOS LOS HOOKS ARRIBA
+  const { isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
+  
   const { cart, searchQuery, addToCart, total } = usePOS()
   const [productos, setProductos] = useState<ProductVariant[]>([])
   const [categoriaActiva, setCategoriaActiva] = useState('Todas')
   const [cargando, setCargando] = useState(true)
 
+  // 2. TODOS LOS EFECTOS Y MEMOS
   useEffect(() => {
-    productoService.obtenerProductosParaPOS().then(data => {
-      setProductos(data)
-      setCargando(false)
-    })
-  }, [])
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login')
+    }
+  }, [isAuthenticated, isLoading, router])
 
-  // 1. Extraemos categorías únicas para los Tabs
+  useEffect(() => {
+    // Solo pedimos productos si ya confirmamos que hay sesión
+    if (isAuthenticated) {
+        productoService.obtenerProductosParaPOS()
+            .then(data => {
+                setProductos(data)
+                setCargando(false)
+            })
+            .catch(err => {
+                console.error("Error cargando productos:", err);
+                setCargando(false);
+            })
+    }
+  }, [isAuthenticated])
+
   const categorias = useMemo(() => {
     const cats = productos.map(p => p.category)
     return ['Todas', ...Array.from(new Set(cats))]
   }, [productos])
 
-  // 2. Filtro combinado: Búsqueda + Categoría
   const filteredProducts = useMemo(() => {
     return productos.filter(p => {
       const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -41,6 +60,18 @@ export default function POSPage() {
     })
   }, [searchQuery, categoriaActiva, productos])
 
+
+  // 3. RECIÉN ACÁ VAN LOS RETURNS CONDICIONALES
+  // Pantalla de carga suave mientras verifica el token o carga la página
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-muted">
+         <span className="text-muted-foreground animate-pulse">Cargando sistema...</span>
+      </div>
+    )
+  }
+
+  // 4. RETURN PRINCIPAL DE LA VISTA
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-background">
       
