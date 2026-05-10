@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from 'react'
 import type { CartItem, ProductVariant, PaymentMethod, MixedPayment } from '@/types/pos'
+import { ventaService } from '@/lib/services/ventaService'
+import { useToast } from '@/hooks/use-toast'
 
 interface POSContextType {
   cart: CartItem[]
@@ -32,6 +34,8 @@ interface POSContextType {
 const POSContext = createContext<POSContextType | undefined>(undefined)
 
 export function POSProvider({ children }: { children: ReactNode }) {
+
+  const { toast } = useToast()
   const [cart, setCart] = useState<CartItem[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
@@ -107,18 +111,42 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setMixedPayment({ efectivo: 0, transferencia: 0, tarjeta: 0 })
   }, [])
 
-  const confirmSale = useCallback(() => {
-    // Here you would typically send the sale data to your backend
-    console.log('Venta confirmada:', {
-      items: cart,
-      total,
-      paymentMethod: selectedPaymentMethod,
-      mixedPayment: selectedPaymentMethod === 'mixto' ? mixedPayment : null,
-    })
-    clearCart()
-    setIsDrawerOpen(false)
-  }, [cart, total, selectedPaymentMethod, mixedPayment, clearCart])
+  const confirmSale = useCallback(async () => {
+    if (cart.length === 0) return;
+    if (!selectedPaymentMethod) {
+        toast({
+        title: "Atención",
+        description: "Por favor selecciona un método de pago antes de confirmar.",
+        variant: "destructive", 
+      });
+        return;
+    }
 
+    try {
+      // 1. Llamamos a nuestra API de C#
+      const respuesta = await ventaService.registrarVenta(cart, total, selectedPaymentMethod);
+      
+      console.log('Venta registrada en BD con éxito:', respuesta);
+      
+      // 2. Si todo salió bien, limpiamos el carrito y cerramos el drawer
+      clearCart();
+      setIsDrawerOpen(false);
+      
+      toast({
+        title: "¡Venta Exitosa!",
+        description: `El ticket #${respuesta.ventaId} se ha registrado correctamente.`,
+        className: "bg-emerald-600 text-white border-none", 
+      });
+      
+    } catch (error) {
+      console.error("Error al registrar la venta:", error);
+      toast({
+        title: "Error en la Venta",
+        description: "Hubo un error al procesar el ticket. Verifica tu conexión o el stock disponible.",
+        variant: "destructive",
+      });
+    }
+  }, [cart, total, selectedPaymentMethod, clearCart, toast]);
   const value = useMemo(
     () => ({
       cart,

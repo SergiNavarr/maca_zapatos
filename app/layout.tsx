@@ -4,9 +4,17 @@ import { TopHeader } from '@/components/layout/TopHeader'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { POSProvider } from '@/context/POSContext'
 import './globals.css'
+import { Toaster } from '@/components/ui/toaster'
 
-const _geist = Geist({ subsets: ['latin'] })
-const _geistMono = Geist_Mono({ subsets: ['latin'] })
+const geist = Geist({ 
+  variable: '--font-geist-sans',
+  subsets: ['latin'] 
+})
+
+const geistMono = Geist_Mono({ 
+  variable: '--font-geist-mono',
+  subsets: ['latin'] 
+})
 
 export const metadata: Metadata = {
   title: 'POS - Punto de Venta',
@@ -46,13 +54,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es-AR" className="bg-muted">
-      <body className="font-sans antialiased">
+      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
         <POSProvider>
           <div className="flex min-h-dvh flex-col bg-muted">
             <TopHeader />
             <main className="flex-1 pb-20">{children}</main>
             <BottomNav />
           </div>
+          <Toaster />
         </POSProvider>
       </body>
     </html>
