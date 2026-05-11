@@ -13,9 +13,25 @@ interface ProductoParaVentaDto {
   imagen?: string;
 }
 
+export interface CrearVarianteDto {
+    talleId: number;
+    colorId: number;
+    sku: string;
+    stockInicial: number;
+}
+
+export interface CrearProductoCompletoDto {
+    categoriaId: number;
+    marcaId: number;
+    nombre: string;
+    descripcion?: string;
+    imagenUrl?: string;
+    precioBase: number;
+    variantes: CrearVarianteDto[];
+}
+
 export const productoService = {
   obtenerProductosParaPOS: async (): Promise<ProductVariant[]> => {
-    // Buscamos los datos en la API
     const data = await apiClient<ProductoParaVentaDto[]>('/productos/pos');
     
     return data.map(item => ({
@@ -29,5 +45,12 @@ export const productoService = {
       quantity: item.stock,
       image: item.imagen || undefined
     }));
+  },
+  
+  crearProductoCompleto: async (productoData: CrearProductoCompletoDto) => {
+    return await apiClient<{ mensaje: string, productoId: number }>('/productos', {
+      method: 'POST',
+      body: JSON.stringify(productoData) // Asumiendo que tu apiClient acepta 'body'
+    });
   }
 }
