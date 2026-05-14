@@ -13,6 +13,18 @@ interface ProductoParaVentaDto {
   imagen?: string;
 }
 
+export interface InventarioFisicoDto {
+  varianteId: number;
+  productoNombre: string;
+  marca: string;
+  categoria: string;
+  sku: string;
+  talle: string;
+  color: string;
+  colorHex: string;
+  stock: number;
+}
+
 export interface VarianteDetalleDto {
   id: number;
   talle: string;
@@ -58,6 +70,18 @@ export interface CrearProductoCompletoDto {
     variantes: CrearVarianteDto[];
 }
 
+export enum TipoMovimientoStock {
+  Entrada = 1,
+  Salida = 2
+}
+
+export interface AjustarStockDto {
+  varianteId: number;
+  tipoMovimiento: TipoMovimientoStock;
+  cantidad: number;
+  motivo: string;
+}
+
 export const productoService = {
   obtenerProductosParaPOS: async (): Promise<ProductVariant[]> => {
     const data = await apiClient<ProductoParaVentaDto[]>('/productos/pos');
@@ -88,5 +112,16 @@ export const productoService = {
 
   obtenerDetalle: async (id: number): Promise<ProductoDetalleDto> => {
     return await apiClient<ProductoDetalleDto>(`/productos/${id}`);
+  },
+
+  obtenerInventario: async (): Promise<InventarioFisicoDto[]> => {
+    return await apiClient<InventarioFisicoDto[]>('/productos/inventario');
+  },
+
+  ajustarStock: async (dto: AjustarStockDto): Promise<void> => {
+    return await apiClient('/productos/inventario/ajustar', {
+      method: 'POST',
+      body: JSON.stringify(dto)
+    });
   },
 }
