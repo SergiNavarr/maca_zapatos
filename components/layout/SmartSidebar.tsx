@@ -25,7 +25,7 @@ export function SmartSidebar() {
 
   return (
     <>
-      {/* 1. VISTA DESKTOP: Sidebar Lateral (Oculta en celulares y en la Caja registradora) */}
+      {/* 1. VISTA DESKTOP: Sidebar Lateral */}
       {pathname && (
         <aside className="hidden md:flex w-64 bg-slate-900 text-slate-300 flex-col h-screen shrink-0">
           <div className="p-6">
