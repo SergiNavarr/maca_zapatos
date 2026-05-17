@@ -28,7 +28,7 @@ interface POSContextType {
   updateMixedPayment: (payment: Partial<MixedPayment>) => void
   setDrawerOpen: (open: boolean) => void
   clearCart: () => void
-  confirmSale: () => void
+  confirmSale: (onSuccess?: () => void) => Promise<void>
 }
 
 const POSContext = createContext<POSContextType | undefined>(undefined)
@@ -57,35 +57,59 @@ export function POSProvider({ children }: { children: ReactNode }) {
     return Math.max(0, total - paid)
   }, [total, mixedPayment])
 
-  const addToCart = useCallback((product: ProductVariant) => {
+ const addToCart = useCallback((product: ProductVariant) => {
+    // 1. Buscamos si ya está en el carrito leyendo el estado actual
+    const existing = cart.find((item) => item.id === product.id);
+    const currentQty = existing ? existing.cartQuantity : 0;
+
+    // 2. Validamos AFUERA del setCart
+    if (currentQty >= product.quantity) {
+      toast({
+        title: "Stock máximo alcanzado",
+        description: `Solo hay ${product.quantity} unidades disponibles.`,
+        variant: "destructive",
+      });
+      return; // no se actualiza el estado
+    }
+
+    // 3. Si todo está bien, actualizamos el estado de forma limpia
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id)
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, cartQuantity: item.cartQuantity + 1 }
-            : item
-        )
+          item.id === product.id ? { ...item, cartQuantity: item.cartQuantity + 1 } : item
+        );
       }
-      return [...prev, { ...product, cartQuantity: 1 }]
-    })
-  }, [])
+      return [...prev, { ...product, cartQuantity: 1 }];
+    });
+  }, [cart, toast]);
 
   const removeFromCart = useCallback((productId: string) => {
     setCart((prev) => prev.filter((item) => item.id !== productId))
   }, [])
 
   const updateQuantity = useCallback((productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      setCart((prev) => prev.filter((item) => item.id !== productId))
-    } else {
-      setCart((prev) =>
-        prev.map((item) =>
-          item.id === productId ? { ...item, cartQuantity: quantity } : item
-        )
-      )
+    const item = cart.find((i) => i.id === productId);
+    if (!item) return;
+
+    // Validamos AFUERA del setCart
+    if (quantity > item.quantity) {
+      toast({
+        title: "Límite alcanzado",
+        description: `No puedes agregar más de ${item.quantity} unidades.`,
+        variant: "destructive",
+      });
+      return;
     }
-  }, [])
+
+    setCart((prev) => {
+      if (quantity <= 0) {
+        return prev.filter((i) => i.id !== productId);
+      }
+      return prev.map((i) =>
+        i.id === productId ? { ...i, cartQuantity: quantity } : i
+      );
+    });
+  }, [cart, toast]);
 
   const setPaymentMethod = useCallback(
     (method: PaymentMethod | 'mixto' | null) => {
@@ -111,7 +135,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
     setMixedPayment({ efectivo: 0, transferencia: 0, tarjeta: 0 })
   }, [])
 
-  const confirmSale = useCallback(async () => {
+  const confirmSale = useCallback(async (onSuccess?: () => void) => {
     if (cart.length === 0) return;
     if (!selectedPaymentMethod) {
         toast({
@@ -126,9 +150,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       // 1. Llamamos a nuestra API de C#
       const respuesta = await ventaService.registrarVenta(cart, total, selectedPaymentMethod);
       
-      console.log('Venta registrada en BD con éxito:', respuesta);
-      
-      // 2. Si todo salió bien, limpiamos el carrito y cerramos el drawer
+      // 2. Limpiamos el carrito y cerramos el cajón
       clearCart();
       setIsDrawerOpen(false);
       
@@ -137,16 +159,21 @@ export function POSProvider({ children }: { children: ReactNode }) {
         description: `El ticket #${respuesta.ventaId} se ha registrado correctamente.`,
         className: "bg-emerald-600 text-white border-none", 
       });
+
+      if (onSuccess) {
+        onSuccess();
+      }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al registrar la venta:", error);
       toast({
         title: "Error en la Venta",
-        description: "Hubo un error al procesar el ticket. Verifica tu conexión o el stock disponible.",
+        description: error.message || "Hubo un error al procesar el ticket.",
         variant: "destructive",
       });
     }
   }, [cart, total, selectedPaymentMethod, clearCart, toast]);
+
   const value = useMemo(
     () => ({
       cart,
@@ -177,6 +204,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
       addToCart,
       removeFromCart,
       updateQuantity,
+      setSearchQuery,
       setPaymentMethod,
       updateMixedPayment,
       setDrawerOpen,

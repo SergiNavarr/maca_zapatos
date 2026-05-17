@@ -88,6 +88,7 @@ export function ProductCard({ item }: ProductCardProps) {
               onClick={() => updateQuantity(item.id, item.cartQuantity + 1)}
               className="size-8"
               aria-label="Aumentar cantidad"
+              disabled={item.cartQuantity >= item.quantity}
             >
               <Plus className="size-4" />
             </Button>

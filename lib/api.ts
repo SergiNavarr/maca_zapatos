@@ -5,10 +5,9 @@ export const apiClient = async <T>(endpoint: string, options?: RequestInit): Pro
   
   const headers = new Headers(options?.headers);
   
-  if (!headers.has('Content-Type')) {
+  if (!headers.has('Content-Type') && !(options?.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
-
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
     if (token) {

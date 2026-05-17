@@ -15,6 +15,11 @@ import { Input } from '@/components/ui/input'
 import { usePOS } from '@/context/POSContext'
 import { cn } from '@/lib/utils'
 
+// 1. Agregamos la interfaz para declarar onSuccess
+interface MixedPaymentDrawerProps {
+  onSuccess?: () => void
+}
+
 const paymentInputs: {
   key: 'efectivo' | 'transferencia' | 'tarjeta'
   label: string
@@ -25,7 +30,8 @@ const paymentInputs: {
   { key: 'tarjeta', label: 'Tarjeta', icon: CreditCard },
 ]
 
-export function MixedPaymentDrawer() {
+// 2. Le decimos al componente que recibe las props
+export function MixedPaymentDrawer({ onSuccess }: MixedPaymentDrawerProps) {
   const {
     isDrawerOpen,
     setDrawerOpen,
@@ -130,7 +136,8 @@ export function MixedPaymentDrawer() {
             <Button
               className="flex-1"
               disabled={!canConfirm}
-              onClick={confirmSale}
+              // 3. Pasamos onSuccess a la función confirmSale
+              onClick={() => confirmSale(onSuccess)}
             >
               Confirmar
             </Button>

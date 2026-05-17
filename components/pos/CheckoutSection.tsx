@@ -6,6 +6,10 @@ import { usePOS } from '@/context/POSContext'
 import { cn } from '@/lib/utils'
 import type { PaymentMethod } from '@/types/pos'
 
+interface CheckoutSectionProps {
+  onSuccess?: () => void
+}
+
 const paymentMethods: {
   id: PaymentMethod | 'mixto'
   label: string
@@ -16,7 +20,8 @@ const paymentMethods: {
   { id: 'mixto', label: 'Mixto', icon: CreditCard },
 ]
 
-export function CheckoutSection() {
+// 2. Le indicamos al componente que va a recibir esas props
+export function CheckoutSection({ onSuccess }: CheckoutSectionProps) {
   const { total, selectedPaymentMethod, setPaymentMethod, confirmSale, cart } =
     usePOS()
 
@@ -68,7 +73,7 @@ export function CheckoutSection() {
         size="lg"
         className="w-full text-base font-semibold"
         disabled={isDisabled || !selectedPaymentMethod}
-        onClick={confirmSale}
+        onClick={() => confirmSale(onSuccess)}
       >
         Confirmar Venta
       </Button>
