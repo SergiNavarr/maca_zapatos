@@ -1,4 +1,11 @@
+'use client'
+
+import { useState, useRef } from 'react'
 import { CategoriaDto, MarcaDto } from '@/lib/services/maestrasService'
+import { ImagePlus, Loader2, X } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
+import { uploadService } from '@/lib/services/uploadService'
+import { Button } from '@/components/ui/button'
 
 interface ProductoMaestroFormProps {
   producto: {
@@ -7,6 +14,7 @@ interface ProductoMaestroFormProps {
     nombre: string;
     descripcion: string;
     precioBase: string;
+    imagenUrl?: string;
   };
   actualizarProducto: (campo: string, valor: string) => void;
   categorias: CategoriaDto[];
@@ -14,10 +22,90 @@ interface ProductoMaestroFormProps {
 }
 
 export function ProductoMaestroForm({ producto, actualizarProducto, categorias, marcas }: ProductoMaestroFormProps) {
+  const { toast } = useToast()
+  
+  // Estados para manejar la carga de la imagen
+  const [subiendo, setSubiendo] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      setSubiendo(true)
+      const urlGenerada = await uploadService.subirImagen(file)
+
+      actualizarProducto('imagenUrl', urlGenerada)
+      
+      toast({ title: "Foto subida", description: "La imagen se procesó correctamente." })
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message })
+    } finally {
+      setSubiendo(false)
+    }
+  }
+
+  const removerImagen = () => {
+    actualizarProducto('imagenUrl', '')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   return (
     <div className="bg-card p-6 rounded-xl border shadow-sm space-y-6">
       <h2 className="text-xl font-semibold border-b pb-2">Datos Generales</h2>
-      
+
+      <div className="space-y-3 pb-4">
+        <label className="text-sm font-medium">Foto del Producto</label>
+        <div className="flex items-center gap-4">
+          <div className="relative flex h-32 w-32 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 bg-muted/50 overflow-hidden group">
+            {producto.imagenUrl ? (
+              <>
+                <img src={producto.imagenUrl} alt="Preview" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={removerImagen}
+                  disabled={subiendo}
+                  className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </>
+            ) : (
+              <ImagePlus className="h-8 w-8 text-muted-foreground/40" />
+            )}
+
+            {subiendo && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="file"
+              accept="image/jpeg, image/png, image/webp"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              disabled={subiendo}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={subiendo}
+            >
+              {subiendo ? 'Subiendo foto...' : 'Seleccionar archivo'}
+            </Button>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Soporta JPG o PNG. Se recortará en formato cuadrado.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label className="text-sm font-medium">Nombre del Modelo</label>

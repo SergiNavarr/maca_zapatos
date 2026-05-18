@@ -16,7 +16,7 @@ export function useNuevoProducto() {
   const [talles, setTalles] = useState<TalleDto[]>([])
 
   const [producto, setProducto] = useState({
-    categoriaId: '', marcaId: '', nombre: '', descripcion: '', imagenUrl: '', precioBase: ''
+    categoriaId: '', marcaId: '', nombre: '', descripcion: '', imagenUrl: '', precioBase: '',
   })
 
   const [variantes, setVariantes] = useState<CrearVarianteDto[]>([
@@ -78,6 +78,7 @@ export function useNuevoProducto() {
         nombre: producto.nombre,
         descripcion: producto.descripcion,
         precioBase: Number(producto.precioBase),
+        imagenUrl: producto.imagenUrl,
         variantes: variantes.map(v => ({
           ...v, 
           talleId: Number(v.talleId), 
@@ -91,7 +92,7 @@ export function useNuevoProducto() {
         description: "El producto y su stock inicial se guardaron correctamente.",
       })
       
-      router.push('/admin/productos')
+      router.push('/productos')
     } catch (error: any) {
       
       toast({

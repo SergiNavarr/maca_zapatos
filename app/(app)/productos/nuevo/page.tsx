@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Save, ArrowLeft } from 'lucide-react'
 
 export default function NuevoProductoPage() {
-  // Consumimos todo desde nuestro Hook
+
   const { estado, acciones } = useNuevoProducto()
 
   return (
