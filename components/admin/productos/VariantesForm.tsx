@@ -4,18 +4,19 @@ import { Button } from '@/components/ui/button'
 import { Plus, Trash2 } from 'lucide-react'
 
 interface VariantesFormProps {
-  variantes: CrearVarianteDto[];
+  variantes: any[];
   talles: TalleDto[];
   colores: ColorDto[];
   categoriaSeleccionada: boolean;
   agregarVariante: () => void;
   eliminarVariante: (index: number) => void;
-  actualizarVariante: (index: number, campo: keyof CrearVarianteDto, valor: string | number) => void;
+  actualizarVariante: (index: number, campo: string, valor: string | number) => void;
+  esEdicion?: boolean;
 }
 
 export function VariantesForm({
   variantes, talles, colores, categoriaSeleccionada,
-  agregarVariante, eliminarVariante, actualizarVariante
+  agregarVariante, eliminarVariante, actualizarVariante, esEdicion = false
 }: VariantesFormProps) {
   return (
     <div className="bg-card p-6 rounded-xl border shadow-sm space-y-4">
@@ -58,12 +59,14 @@ export function VariantesForm({
                      onChange={e => actualizarVariante(index, 'sku', e.target.value)} />
             </div>
 
-            <div className="w-24 space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">Stock</label>
-              <input required type="number" min="0" className="w-full h-9 rounded-md border bg-background px-3 text-sm"
-                     value={variante.stockInicial} 
-                     onChange={e => actualizarVariante(index, 'stockInicial', e.target.value)} />
-            </div>
+            {!esEdicion && (
+              <div className="w-24 space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Stock</label>
+                <input required type="number" min="0" className="w-full h-9 rounded-md border bg-background px-3 text-sm"
+                       value={variante.stockInicial} 
+                       onChange={e => actualizarVariante(index, 'stockInicial', e.target.value)} />
+              </div>
+            )}
 
             <Button type="button" variant="destructive" size="icon" className="h-9 w-9 shrink-0" 
                     onClick={() => eliminarVariante(index)} disabled={variantes.length === 1}>

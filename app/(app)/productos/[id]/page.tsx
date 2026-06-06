@@ -34,7 +34,10 @@ export default function DetalleProductoPage() {
         <Button variant="ghost" onClick={() => router.back()} className="text-slate-600">
           <ArrowLeft className="mr-2 h-4 w-4" /> Volver al catálogo
         </Button>
-        <Button className="bg-indigo-600">
+        <Button 
+          className="bg-indigo-600"
+          onClick={() => router.push(`/productos/${id}/editar`)}
+        >
           <Edit className="mr-2 h-4 w-4" /> Editar Producto
         </Button>
       </div>

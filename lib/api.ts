@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://localhost:7277/api';
+const API_BASE_URL = 'https://maca-zapatos-backend.onrender.com/api';
 
 export const apiClient = async <T>(endpoint: string, options?: RequestInit): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;

@@ -46,11 +46,12 @@ export interface ProductoDetalleDto {
 }
 
 export interface CrearVarianteDto {
-    talleId: number;
-    colorId: number;
-    sku: string;
-    stockInicial: number;
+  talleId: number;
+  colorId: number;
+  sku: string;
+  stockInicial: number;
 }
+
 export interface ProductoMaestroDto {
   id: number;
   nombre: string;
@@ -61,13 +62,28 @@ export interface ProductoMaestroDto {
 }
 
 export interface CrearProductoCompletoDto {
-    categoriaId: number;
-    marcaId: number;
-    nombre: string;
-    descripcion?: string;
-    imagenUrl?: string;
-    precioBase: number;
-    variantes: CrearVarianteDto[];
+  categoriaId: number;
+  marcaId: number;
+  nombre: string;
+  descripcion?: string;
+  imagenUrl?: string;
+  precioBase: number;
+  variantes: CrearVarianteDto[];
+}
+
+export interface ActualizarProductoCompletoDto {
+  categoriaId: number;
+  marcaId: number;
+  nombre: string;
+  descripcion?: string;
+  imagenUrl?: string;
+  precioBase: number;
+  variantes: {
+    id?: number;
+    talleId: number;
+    colorId: number;
+    sku: string;
+  }[];
 }
 
 export enum TipoMovimientoStock {
@@ -102,7 +118,14 @@ export const productoService = {
   crearProductoCompleto: async (productoData: CrearProductoCompletoDto) => {
     return await apiClient<{ mensaje: string, productoId: number }>('/productos', {
       method: 'POST',
-      body: JSON.stringify(productoData) // Asumiendo que tu apiClient acepta 'body'
+      body: JSON.stringify(productoData)
+    });
+  },
+
+  actualizarProductoCompleto: async (id: number, productoData: ActualizarProductoCompletoDto) => {
+    return await apiClient<{ mensaje: string }>(`/productos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(productoData)
     });
   },
 
