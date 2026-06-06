@@ -6,11 +6,11 @@ import { useAuth } from '@/context/AuthContext'
 import { LayoutDashboard, ShoppingCart, Receipt, Package, Settings, LogOut } from 'lucide-react'
 
 const menuItems = [
-  { name: 'Caja', href: '/', icon: ShoppingCart, roles: ['Administrador', 'Cajero'] },
+  { name: 'Caja', href: '/', icon: ShoppingCart, roles: ['Administrador', 'Vendedor'] },
   { name: 'Panel', href: '/dashboard', icon: LayoutDashboard, roles: ['Administrador'] },
   { name: 'Catálogo', href: '/productos', icon: Settings, roles: ['Administrador'] },
-  { name: 'Stock', href: '/inventario', icon: Package, roles: ['Administrador', 'Cajero'] },
-  { name: 'Gastos', href: '/gastos', icon: Receipt, roles: ['Administrador', 'Cajero'] },
+  { name: 'Stock', href: '/inventario', icon: Package, roles: ['Administrador', 'Vendedor'] },
+  { name: 'Gastos', href: '/gastos', icon: Receipt, roles: ['Administrador', 'Vendedor'] },
 ]
 
 export function SmartSidebar() {
