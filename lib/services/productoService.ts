@@ -48,7 +48,6 @@ export interface ProductoDetalleDto {
 export interface CrearVarianteDto {
   talleId: number;
   colorId: number;
-  sku: string;
   stockInicial: number;
 }
 
@@ -68,6 +67,7 @@ export interface CrearProductoCompletoDto {
   descripcion?: string;
   imagenUrl?: string;
   precioBase: number;
+  skuBase: string;
   variantes: CrearVarianteDto[];
 }
 

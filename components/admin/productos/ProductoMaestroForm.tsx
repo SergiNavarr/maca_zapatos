@@ -15,13 +15,17 @@ interface ProductoMaestroFormProps {
     descripcion: string;
     precioBase: string;
     imagenUrl?: string;
+    skuBase?: string;
   };
   actualizarProducto: (campo: string, valor: string) => void;
   categorias: CategoriaDto[];
   marcas: MarcaDto[];
+  // Solo "nuevo producto" muestra el campo de código base (SKU). En edición el SKU
+  // ya existe por variante y el backend no lo regenera, así que no se muestra.
+  mostrarSkuBase?: boolean;
 }
 
-export function ProductoMaestroForm({ producto, actualizarProducto, categorias, marcas }: ProductoMaestroFormProps) {
+export function ProductoMaestroForm({ producto, actualizarProducto, categorias, marcas, mostrarSkuBase = false }: ProductoMaestroFormProps) {
   const { toast } = useToast()
   
   // Estados para manejar la carga de la imagen
@@ -137,6 +141,17 @@ export function ProductoMaestroForm({ producto, actualizarProducto, categorias, 
           </select>
         </div>
         
+        {mostrarSkuBase && (
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-sm font-medium">Código base (SKU)</label>
+            <input required type="text" placeholder="Ej: NKE-AIRMAX" className="w-full flex h-10 rounded-md border bg-background px-3 py-2 text-sm uppercase"
+                   value={producto.skuBase ?? ''} onChange={e => actualizarProducto('skuBase', e.target.value)} />
+            <p className="text-xs text-muted-foreground">
+              El SKU de cada variante se genera automáticamente como {'{código}-{talle}-{color}'}.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-medium">Descripción (Opcional)</label>
           <textarea className="w-full flex min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm" 

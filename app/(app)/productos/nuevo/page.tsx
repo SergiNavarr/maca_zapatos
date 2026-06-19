@@ -2,7 +2,7 @@
 
 import { useNuevoProducto } from '@/hooks/useNuevoProducto'
 import { ProductoMaestroForm } from '@/components/admin/productos/ProductoMaestroForm'
-import { VariantesForm } from '@/components/admin/productos/VariantesForm'
+import { VariantesAgrupadasForm } from '@/components/admin/productos/VariantesAgrupadasForm'
 import { Button } from '@/components/ui/button'
 import { Save, ArrowLeft } from 'lucide-react'
 
@@ -21,21 +21,24 @@ export default function NuevoProductoPage() {
 
       <form onSubmit={acciones.guardarProducto} className="space-y-8">
         
-        <ProductoMaestroForm 
+        <ProductoMaestroForm
           producto={estado.producto}
           actualizarProducto={acciones.actualizarProducto}
           categorias={estado.catalogos.categorias}
           marcas={estado.catalogos.marcas}
+          mostrarSkuBase
         />
 
-        <VariantesForm 
-          variantes={estado.variantes}
+        <VariantesAgrupadasForm
+          gruposTalle={estado.gruposTalle}
           talles={estado.catalogos.talles}
           colores={estado.catalogos.colores}
           categoriaSeleccionada={estado.categoriaSeleccionada}
-          agregarVariante={acciones.agregarVariante}
-          eliminarVariante={acciones.eliminarVariante}
-          actualizarVariante={acciones.actualizarVariante}
+          agregarTalle={acciones.agregarTalle}
+          eliminarTalle={acciones.eliminarTalle}
+          agregarColor={acciones.agregarColor}
+          eliminarColor={acciones.eliminarColor}
+          actualizarStock={acciones.actualizarStock}
         />
 
         <div className="flex justify-end gap-4">

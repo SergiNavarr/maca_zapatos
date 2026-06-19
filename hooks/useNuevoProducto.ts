@@ -4,7 +4,9 @@ import { maestrasService, CategoriaDto, MarcaDto, ColorDto, TalleDto } from '@/l
 import { productoService, CrearVarianteDto } from '@/lib/services/productoService'
 import { useToast } from '@/components/ui/use-toast'
 
-const STORAGE_KEY = 'form-nuevo-producto'
+// v2: el estado de variantes pasó de lista plana a agrupado por talle (gruposTalle).
+// Bumpeamos la key para que drafts viejos (estructura `variantes`) directamente no se lean.
+const STORAGE_KEY = 'form-nuevo-producto-v2'
 
 type ProductoForm = {
   categoriaId: string
@@ -13,19 +15,24 @@ type ProductoForm = {
   descripcion: string
   imagenUrl: string
   precioBase: string
+  skuBase: string
 }
+
+// Estado agrupado: por cada talle, la lista de colores cargados con su stock.
+// Esto es lo único que se persiste y se aplana al guardar. La selección transitoria
+// de "qué talle/color estoy por agregar" vive en estado local de los componentes de UI.
+export type ColorEnTalle = { colorId: number; stock: number }
+export type GrupoTalle = { talleId: number; colores: ColorEnTalle[] }
 
 const PRODUCTO_DEFAULT: ProductoForm = {
-  categoriaId: '', marcaId: '', nombre: '', descripcion: '', imagenUrl: '', precioBase: '',
+  categoriaId: '', marcaId: '', nombre: '', descripcion: '', imagenUrl: '', precioBase: '', skuBase: '',
 }
 
-const VARIANTES_DEFAULT: CrearVarianteDto[] = [
-  { talleId: 0, colorId: 0, sku: '', stockInicial: 0 }
-]
+const GRUPOS_DEFAULT: GrupoTalle[] = []
 
-// Lee el estado persistido en sessionStorage. Solo `producto` y `variantes`
+// Lee el estado persistido en sessionStorage. Solo `producto` y `gruposTalle`
 // (los catálogos vienen de la API). Tolerante a storage no disponible / JSON corrupto.
-function leerEstadoGuardado(): { producto?: ProductoForm; variantes?: CrearVarianteDto[] } {
+function leerEstadoGuardado(): { producto?: ProductoForm; gruposTalle?: GrupoTalle[] } {
   try {
     if (typeof window === 'undefined') return {}
     const crudo = window.sessionStorage.getItem(STORAGE_KEY)
@@ -33,7 +40,7 @@ function leerEstadoGuardado(): { producto?: ProductoForm; variantes?: CrearVaria
     const data = JSON.parse(crudo)
     return {
       producto: data?.producto,
-      variantes: Array.isArray(data?.variantes) ? data.variantes : undefined,
+      gruposTalle: Array.isArray(data?.gruposTalle) ? data.gruposTalle : undefined,
     }
   } catch {
     return {}
@@ -62,8 +69,8 @@ export function useNuevoProducto() {
   const yaRestaurado = useRef(false)
 
   // El próximo cambio de categoriaId proviene de la restauración: el efecto cascada
-  // debe saltear (una sola vez) la carga y el reset de talleId, porque el efecto de
-  // restauración ya cargó los talles y el talleId restaurado debe conservarse.
+  // debe saltear (una sola vez) la carga y el reset de gruposTalle, porque el efecto de
+  // restauración ya cargó los talles y los gruposTalle restaurados deben conservarse.
   const saltearCascadaRestauracion = useRef(false)
 
   // Inicializamos SIEMPRE con los defaults vacíos, idéntico al servidor. La
@@ -71,11 +78,9 @@ export function useNuevoProducto() {
   // elimina el hydration mismatch (el <img> de preview vs. el placeholder).
   const [producto, setProducto] = useState<ProductoForm>({ ...PRODUCTO_DEFAULT })
 
-  const [variantes, setVariantes] = useState<CrearVarianteDto[]>(
-    VARIANTES_DEFAULT.map(v => ({ ...v }))
-  )
+  const [gruposTalle, setGruposTalle] = useState<GrupoTalle[]>(GRUPOS_DEFAULT)
 
-  // Persistencia: guardar `producto` y `variantes` cada vez que cambian.
+  // Persistencia: guardar `producto` y `gruposTalle` cada vez que cambian.
   // DEPENDENCIA DE ORDEN DE EFECTOS: este efecto está declarado ANTES que el de
   // restauración, por lo que en el mount corre PRIMERO, con los defaults vacíos.
   // El guard `!yaRestaurado.current` evita que ese primer disparo sobrescriba
@@ -87,11 +92,11 @@ export function useNuevoProducto() {
     if (!yaRestaurado.current) return
     try {
       if (typeof window === 'undefined') return
-      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ producto, variantes }))
+      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ producto, gruposTalle }))
     } catch {
       // sessionStorage no disponible (modo privado, cuota, etc.): no rompemos el formulario.
     }
-  }, [producto, variantes])
+  }, [producto, gruposTalle])
 
   const limpiarEstadoGuardado = () => {
     try {
@@ -121,7 +126,9 @@ export function useNuevoProducto() {
       // El flag solo se consume dentro de la rama truthy: la corrida inicial con
       // categoriaId vacío entra al else y nunca lo toca. Así, cuando la
       // restauración mete una categoriaId, saltamos carga + reset una única vez y
-      // conservamos el talleId restaurado.
+      // conservamos los gruposTalle restaurados. Un cambio MANUAL de categoría por
+      // el usuario no pasa por acá (el flag está en false) → recarga talles y
+      // resetea gruposTalle, que es lo correcto (los talles pertenecen a la categoría).
       if (saltearCascadaRestauracion.current) {
         saltearCascadaRestauracion.current = false
         return
@@ -129,7 +136,7 @@ export function useNuevoProducto() {
       maestrasService.obtenerTallesPorCategoria(Number(producto.categoriaId))
         .then(setTalles)
         .catch(console.error)
-      setVariantes(prev => prev.map(v => ({ ...v, talleId: 0 })))
+      setGruposTalle([])
     } else {
       setTalles([])
     }
@@ -142,11 +149,11 @@ export function useNuevoProducto() {
   // En el mount el cascada corre primero con categoriaId vacío (rama else, sin tocar
   // el flag); recién después restauramos. Si la categoría restaurada tiene talles,
   // los cargamos explícitamente acá (no solo delegado al cascada) para que el
-  // <select> de talle tenga sus <option> cuanto antes y el talleId restaurado quede
-  // seleccionado. El cascada, al dispararse por el nuevo categoriaId, salteará su
+  // <select> de talle tenga sus <option> cuanto antes y los talleId restaurados queden
+  // disponibles. El cascada, al dispararse por el nuevo categoriaId, salteará su
   // carga/reset gracias a saltearCascadaRestauracion.
   useEffect(() => {
-    const { producto: pGuardado, variantes: vGuardadas } = guardadoInicial.current
+    const { producto: pGuardado, gruposTalle: gGuardados } = guardadoInicial.current
 
     if (pGuardado && typeof pGuardado === 'object') {
       const productoRestaurado = { ...PRODUCTO_DEFAULT, ...pGuardado }
@@ -159,8 +166,8 @@ export function useNuevoProducto() {
       }
 
       setProducto(productoRestaurado)
-      if (Array.isArray(vGuardadas) && vGuardadas.length > 0) {
-        setVariantes(vGuardadas.map(v => ({ ...v })))
+      if (Array.isArray(gGuardados) && gGuardados.length > 0) {
+        setGruposTalle(gGuardados.map(g => ({ ...g, colores: g.colores.map(c => ({ ...c })) })))
       }
     }
 
@@ -172,23 +179,73 @@ export function useNuevoProducto() {
     setProducto(prev => ({ ...prev, [campo]: valor }))
   }
 
-  const agregarVariante = () => {
-    setVariantes([...variantes, { talleId: 0, colorId: 0, sku: '', stockInicial: 0 }])
+  // --- Handlers de gruposTalle (siempre por id, nunca por índice) ---
+
+  const agregarTalle = (talleId: number) => {
+    if (!talleId) return
+    setGruposTalle(prev =>
+      prev.some(g => g.talleId === talleId) ? prev : [...prev, { talleId, colores: [] }]
+    )
   }
 
-  const eliminarVariante = (index: number) => {
-    setVariantes(variantes.filter((_, i) => i !== index))
+  const eliminarTalle = (talleId: number) => {
+    setGruposTalle(prev => prev.filter(g => g.talleId !== talleId))
   }
 
-  const actualizarVariante = (index: number, campo: keyof CrearVarianteDto, valor: string | number) => {
-    const nuevas = [...variantes]
-    nuevas[index] = { ...nuevas[index], [campo]: valor }
-    setVariantes(nuevas)
+  const agregarColor = (talleId: number, colorId: number) => {
+    if (!colorId) return
+    setGruposTalle(prev =>
+      prev.map(g => {
+        if (g.talleId !== talleId) return g
+        if (g.colores.some(c => c.colorId === colorId)) return g
+        return { ...g, colores: [...g.colores, { colorId, stock: 0 }] }
+      })
+    )
+  }
+
+  const eliminarColor = (talleId: number, colorId: number) => {
+    setGruposTalle(prev =>
+      prev.map(g =>
+        g.talleId === talleId
+          ? { ...g, colores: g.colores.filter(c => c.colorId !== colorId) }
+          : g
+      )
+    )
+  }
+
+  const actualizarStock = (talleId: number, colorId: number, stock: number) => {
+    setGruposTalle(prev =>
+      prev.map(g =>
+        g.talleId === talleId
+          ? { ...g, colores: g.colores.map(c => (c.colorId === colorId ? { ...c, stock } : c)) }
+          : g
+      )
+    )
   }
 
   // 5. Lógica de guardado
   const guardarProducto = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Aplanado: por cada talle, por cada color, una variante { talleId, colorId, stockInicial }.
+    // El SKU NO se manda: lo genera el backend como {skuBase}-{talle}-{color}.
+    const variantes: CrearVarianteDto[] = gruposTalle.flatMap(g =>
+      g.colores.map(c => ({
+        talleId: g.talleId,
+        colorId: c.colorId,
+        stockInicial: Number(c.stock),
+      }))
+    )
+
+    if (variantes.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Faltan variantes",
+        description: "Agregá al menos un talle con un color.",
+      })
+      return
+    }
+
     try {
       await productoService.crearProductoCompleto({
         categoriaId: Number(producto.categoriaId),
@@ -197,14 +254,10 @@ export function useNuevoProducto() {
         descripcion: producto.descripcion,
         precioBase: Number(producto.precioBase),
         imagenUrl: producto.imagenUrl,
-        variantes: variantes.map(v => ({
-          ...v, 
-          talleId: Number(v.talleId), 
-          colorId: Number(v.colorId), 
-          stockInicial: Number(v.stockInicial)
-        }))
+        skuBase: producto.skuBase,
+        variantes,
       })
-      
+
       toast({
         title: "¡Mercadería ingresada!",
         description: "El producto y su stock inicial se guardaron correctamente.",
@@ -213,13 +266,13 @@ export function useNuevoProducto() {
       limpiarEstadoGuardado()
       router.push('/productos')
     } catch (error: any) {
-      
+
       toast({
         variant: "destructive",
         title: "Error al guardar",
         description: error.message,
       })
-      
+
     }
   }
 
@@ -231,15 +284,17 @@ export function useNuevoProducto() {
   return {
     estado: {
       producto,
-      variantes,
+      gruposTalle,
       catalogos: { categorias, marcas, colores, talles },
       categoriaSeleccionada: !!producto.categoriaId
     },
     acciones: {
       actualizarProducto,
-      agregarVariante,
-      eliminarVariante,
-      actualizarVariante,
+      agregarTalle,
+      eliminarTalle,
+      agregarColor,
+      eliminarColor,
+      actualizarStock,
       guardarProducto,
       cancelar
     }
