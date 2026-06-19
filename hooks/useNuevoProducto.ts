@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { maestrasService, CategoriaDto, MarcaDto, ColorDto, TalleDto } from '@/lib/services/maestrasService'
 import { productoService, CrearVarianteDto } from '@/lib/services/productoService'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 // v2: el estado de variantes pasó de lista plana a agrupado por talle (gruposTalle).
 // Bumpeamos la key para que drafts viejos (estructura `variantes`) directamente no se lean.

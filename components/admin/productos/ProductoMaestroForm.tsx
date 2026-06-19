@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { CategoriaDto, MarcaDto } from '@/lib/services/maestrasService'
 import { ImagePlus, Loader2, X } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import { uploadService } from '@/lib/services/uploadService'
 import { Button } from '@/components/ui/button'
 

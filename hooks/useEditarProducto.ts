@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { maestrasService, CategoriaDto, MarcaDto, ColorDto, TalleDto } from '@/lib/services/maestrasService'
 import { productoService, ActualizarProductoCompletoDto } from '@/lib/services/productoService'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 
 export function useEditarProducto(productoId: number) {
   const router = useRouter()
