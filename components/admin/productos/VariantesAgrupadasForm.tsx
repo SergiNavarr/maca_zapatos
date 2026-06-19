@@ -13,7 +13,7 @@ interface VariantesAgrupadasFormProps {
   eliminarTalle: (talleId: number) => void;
   agregarColor: (talleId: number, colorId: number) => void;
   eliminarColor: (talleId: number, colorId: number) => void;
-  actualizarStock: (talleId: number, colorId: number, stock: number) => void;
+  actualizarStock: (talleId: number, colorId: number, stock: number | '') => void;
 }
 
 export function VariantesAgrupadasForm({
@@ -107,7 +107,7 @@ interface BloqueTalleProps {
   eliminarTalle: (talleId: number) => void;
   agregarColor: (talleId: number, colorId: number) => void;
   eliminarColor: (talleId: number, colorId: number) => void;
-  actualizarStock: (talleId: number, colorId: number, stock: number) => void;
+  actualizarStock: (talleId: number, colorId: number, stock: number | '') => void;
 }
 
 function BloqueTalle({
@@ -175,12 +175,17 @@ function BloqueTalle({
               <div className="w-28 space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">Stock</label>
                 <input
-                  required
                   type="number"
                   min="0"
                   className="w-full h-9 rounded-md border bg-background px-3 text-sm"
                   value={col.stock}
-                  onChange={e => actualizarStock(grupo.talleId, col.colorId, Number(e.target.value))}
+                  onChange={e => {
+                    const v = e.target.value
+                    // '' = estado intermedio de edición (permite borrar el 0 y reescribir).
+                    // Negativos se clampean a 0. La conversión final a number ocurre al aplanar.
+                    const stock = v === '' ? '' : Math.max(0, Number(v))
+                    actualizarStock(grupo.talleId, col.colorId, stock)
+                  }}
                 />
               </div>
 

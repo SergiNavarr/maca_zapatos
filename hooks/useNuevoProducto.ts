@@ -21,7 +21,7 @@ type ProductoForm = {
 // Estado agrupado: por cada talle, la lista de colores cargados con su stock.
 // Esto es lo único que se persiste y se aplana al guardar. La selección transitoria
 // de "qué talle/color estoy por agregar" vive en estado local de los componentes de UI.
-export type ColorEnTalle = { colorId: number; stock: number }
+export type ColorEnTalle = { colorId: number; stock: number | '' }
 export type GrupoTalle = { talleId: number; colores: ColorEnTalle[] }
 
 const PRODUCTO_DEFAULT: ProductoForm = {
@@ -198,7 +198,7 @@ export function useNuevoProducto() {
       prev.map(g => {
         if (g.talleId !== talleId) return g
         if (g.colores.some(c => c.colorId === colorId)) return g
-        return { ...g, colores: [...g.colores, { colorId, stock: 0 }] }
+        return { ...g, colores: [...g.colores, { colorId, stock: '' }] }
       })
     )
   }
@@ -213,7 +213,7 @@ export function useNuevoProducto() {
     )
   }
 
-  const actualizarStock = (talleId: number, colorId: number, stock: number) => {
+  const actualizarStock = (talleId: number, colorId: number, stock: number | '') => {
     setGruposTalle(prev =>
       prev.map(g =>
         g.talleId === talleId
@@ -242,6 +242,18 @@ export function useNuevoProducto() {
         variant: "destructive",
         title: "Faltan variantes",
         description: "Agregá al menos un talle con un color.",
+      })
+      return
+    }
+
+    // Stock vacío ('') es un estado intermedio de edición válido en el input, pero no
+    // se puede guardar: lo bloqueamos acá con un toast propio (en vez del tooltip nativo).
+    const hayStockVacio = gruposTalle.some(g => g.colores.some(c => c.stock === ''))
+    if (hayStockVacio) {
+      toast({
+        variant: "destructive",
+        title: "Stock incompleto",
+        description: "Hay colores sin stock cargado. Completá el stock de todas las variantes antes de guardar.",
       })
       return
     }
