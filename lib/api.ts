@@ -1,4 +1,12 @@
-const API_BASE_URL = 'https://maca-zapatos-backend.onrender.com/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error(
+    'Falta la variable de entorno NEXT_PUBLIC_API_URL. ' +
+      'Definila en .env.local (ver .env.example). ' +
+      'No hay fallback a producción a propósito.'
+  );
+}
 
 export const apiClient = async <T>(endpoint: string, options?: RequestInit): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
